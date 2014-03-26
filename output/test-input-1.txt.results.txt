@@ -1,0 +1,24 @@
+Part Number:1
+-------------------------
+Union Set:1	 Set: 1	 flag:True
+Union Set:1	 Set: 2	 flag:True
+Union Set:1	 Set: 3	 flag:True
+Union Set:1	 Set: 4	 flag:True
+Part Number:2
+-------------------------
+Union Set:2	 Set: 1	 flag:True
+Union Set:2	 Set: 2	 flag:True
+Union Set:2	 Set: 3	 flag:True
+Union Set:2	 Set: 4	 flag:True
+Part Number:3
+-------------------------
+Union Set:3	 Set: 1	 flag:True
+Union Set:3	 Set: 2	 flag:True
+Union Set:3	 Set: 3	 flag:True
+Union Set:3	 Set: 4	 flag:True
+Part Number:4
+-------------------------
+Union Set:4	 Set: 1	 flag:True
+Union Set:4	 Set: 2	 flag:True
+Union Set:4	 Set: 3	 flag:True
+Union Set:4	 Set: 4	 flag:True
