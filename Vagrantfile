@@ -83,15 +83,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   ###########################################
 
   config.vm.provision :shell, :inline => "apt-get update -q"
-  config.vm.provision :shell, :inline => "apt-get install -q -y python-dev"
-  config.vm.provision :shell, :inline => "apt-get install -q -y python-setuptools"
+  config.vm.provision :shell, :inline => "apt-get install -q -y git make curl python-dev python-setuptools"
   config.vm.provision :shell, :inline => "easy_install pip"
 
   ###########################################
-  # for virtual environments
+  # for pandas
   ###########################################
 
-  config.vm.provision :shell, :inline => "pip install -r /vagrant/requirements.txt"
+  config.vm.provision :shell, :inline => "apt-get install -q -y python-numpy python-pandas"
 
   # Enable provisioning with chef solo, specifying a cookbooks path, roles
   # path, and data_bags path (all relative to this Vagrantfile), and adding
