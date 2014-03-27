@@ -5,6 +5,7 @@ import random
 import time
 import os
 import sys
+#import pandas as pd
 import re
 from functools import wraps
 
@@ -27,6 +28,9 @@ class SetPerformanceTester:
         nodes -- the imaginary part (default 1000)
         verbose -- write out debug information to system (default False)
 
+        NOTE: the pandas stuff is commented out so you can run on base python and because
+        it is not well implemented.
+
     """
 
     intersection_report_data = []
@@ -43,34 +47,52 @@ class SetPerformanceTester:
             self.load_data_from_filename(filename)
         else:
             self.data_filename = ''
-            self.parts = kwargs.get('parts', 600)
+            self.parts = kwargs.get('parts', 700)
             self.nodes = kwargs.get('nodes', 5000)
             self.load_random_data(self.parts, self.nodes)
 
-    def timefunc(func):
+    def timetest(func):
         """Main timing function wrapper that is used to test performance of the tests. The
             wrapper should be put around the main tests and expects each function that it
-            wraps to return [FILL UN THIS BLANK]
+            wraps to return a dictionary with information about the test. This is not
+            necessary but it would be nice. The format is:
 
-            The wrapper makes the function it wraps return a dictionary that is an entry
-            for the report on the tests.  The entry is in the format:
+            {'container_type': data structure holding the parts,
+            'part_type': data structure describing the parts,
+            'data_size': size of complete container}
+
+            The wrapper runs a set of timed runs of the function and returns a dictionary
+            that is an entry for the report on the tests.  The entry is in the format:
 
             {'test': the test name (the function name),
-            'data_information': the data structure used for the parts adn the container and
-                                the size of the data,
+            'data_information': described above,
             'timed_result': the amount of time the test took}
 
-            This can and should be changed to use time.perf_counter() for better timing.
+            This can and should be changed to use time.perf_counter() instead on time.time() for better timing.
+
+            There is also an issue of load on machine you are testing on so you should try to do this in an
+            isolated environment.
 
             More on this to come, most likely.
 
         """
         @wraps(func)
         def wrapper(*args, **kwargs):
-            start = time.time()
-            r = func(*args, **kwargs)
-            end = time.time()
-            return {'test': func.__name__, 'data_information': r, 'timed_result': end - start}
+
+            trials = 2
+            total = 0
+
+            for i in range(0, trials):
+
+                print func.__name__ + " Trial:" + str(i + 1)
+
+                start = time.time()
+                r = func(*args, **kwargs)
+                end = time.time()
+
+                total += end - start
+
+            return {'test': func.__name__, 'data_information': r, 'average_time': total / trials, 'trials': trials}
         return wrapper
 
     def load_data_from_filename(self, filename):
@@ -120,14 +142,20 @@ class SetPerformanceTester:
 
         self.test_report = []
 
-        #build data sets
-        dict_of_sets = self.build_dict_of_sets(self.data_dict)
-        set_of_sets = self.build_set_of_sets(self.data_dict)
-
-        #run tests
+        #dict of lists
         self.test_report.append(self.dicts_any_intersection_node_test(self.data_dict))
+
+        #dict of sets
+        dict_of_sets = self.build_dict_of_sets(self.data_dict)
         self.test_report.append(self.dicts_any_intersection_node_test(dict_of_sets))
+
+        #set of sets
+        set_of_sets = self.build_set_of_sets(self.data_dict)
         self.test_report.append(self.sets_any_intersection_node_test(set_of_sets))
+
+        #pandas - experimental and probably not the way to use pandas
+        # dict_of_pandas = self.build_dict_of_panda_series(self.data_dict)
+        # self.test_report.append(self.dicts_any_intersection_node_test(dict_of_pandas))
 
         # print results
         self.print_tests_results()
@@ -136,9 +164,10 @@ class SetPerformanceTester:
         """Print the test results, broken out for future enhancements."""
 
         for test in self.test_report:
-            print test
+            for detail in test:
+                print detail + ': ', test[detail]
 
-    @timefunc
+    @timetest
     def dicts_any_intersection_node_test(self, data):
         """A simple way to find if parts share a common node using a dictionary of lists or sets.
             An improvement would be to not double check the parts against each other."""
@@ -157,7 +186,7 @@ class SetPerformanceTester:
                             break
         return {'container_type': container_type, 'part_type': part_type, 'data_size': data_size}
 
-    @timefunc
+    @timetest
     def sets_any_intersection_node_test(self, data):
         """A simple way to find if parts share a common node using sets of sets. An improvement
             would be to not double check the parts against each other."""
@@ -198,11 +227,23 @@ class SetPerformanceTester:
 
         return data_sets
 
+    # @staticmethod
+    # def build_dict_of_panda_series(data):
+    #     """Build set of sets for tests but a dictionary of sets is a Dataframe in pandas
+    #         so we need to research this."""
+    #
+    #     data_pandas = {}
+    #
+    #     for part in data:
+    #         data_pandas[part] = pd.Series(data[part])
+    #
+    #     return data_pandas
+
     def create_intersection_report(self, data=None):
-        """Determine if two parts have intersecting nodes and save to intersection report"""
+        """Determine if two parts have intersecting nodes and save to intersection report - NOT OPTIMIZED"""
 
         if not data:
-            data = self.data_dict
+            data = self.build_dict_of_sets(self.data_dict)
 
         self.intersection_report_data = []
 
@@ -222,6 +263,7 @@ class SetPerformanceTester:
             self.intersection_report_data.append(report_row)
 
     def print_intersection_report(self):
+        """Print out report to the output directory based on nodes and parts"""
         try:
             filename = ''
 
@@ -269,11 +311,11 @@ parser.add_argument('-file',
 parser.add_argument('-fileOut',
                     dest='file_out',
                     action='store_true',
-                    help='output results of the intersection report to file instead of system')
-parser.add_argument('-pandas',
-                    dest='pandas',
+                    help='output results of the intersection report to file')
+parser.add_argument('-skipTests',
+                    dest='skip_tests',
                     action='store_true',
-                    help='only run the pandas version')
+                    help='do not run the tests')
 parser.add_argument('-v',
                     dest='verbose',
                     action='store_true',
@@ -313,15 +355,27 @@ else:
 if args.verbose:
     print 'Starting the test....'
 
-set_perm_tester.run_tests()
+if args.skip_tests:
+    print 'Skipping the tests....'
+else:
+    set_perm_tester.run_tests()
+
+    if args.verbose:
+        print 'Testing Completed....'
 
 if args.file_out:
-
     if args.verbose:
         print 'Writing out intersection results....'
 
     set_perm_tester.create_intersection_report()
     set_perm_tester.print_intersection_report()
 
+    if args.verbose:
+        print 'Report Complete....'
+
 if args.verbose:
-    print 'Testing Completed....'
+    print 'Program Finished....'
+
+
+
+
