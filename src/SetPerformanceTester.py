@@ -278,9 +278,8 @@ class SetPerformanceTester:
 
             with open(filename, 'wt') as f:
                 for report_row in self.intersection_report_data:
-                    f.write(str(report_row[0]) + '|' + str(report_row[1]))
-                    f.write(report_row[2])
-                    f.write('\n')
+                    f.write(str(report_row[0]) + '|' + str(report_row[1]) + '|' + str(report_row[2]))
+
         except Exception, e:
             print 'Unexpected error:', str(e)
             print 'Problems writing the data output file.'
