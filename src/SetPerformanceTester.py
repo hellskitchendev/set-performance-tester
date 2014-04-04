@@ -47,9 +47,14 @@ class SetPerformanceTester:
             self.load_data_from_filename(filename)
         else:
             self.data_filename = ''
-            self.parts = kwargs.get('parts', 700)
-            self.nodes = kwargs.get('nodes', 5000)
-            self.load_random_data(self.parts, self.nodes)
+            self.parts = kwargs.get('parts', 200)
+            self.nodes = kwargs.get('nodes', 3000)
+            self.max_nodes = kwargs.get('max_nodes')
+
+            if not self.max_nodes:
+                self.max_nodes = self.nodes
+
+            self.load_random_data(self.parts, self.nodes, self.max_nodes)
 
     def timetest(func):
         """Main timing function wrapper that is used to test performance of the tests. The
@@ -58,7 +63,7 @@ class SetPerformanceTester:
             necessary but it would be nice. The format is:
 
             {'container_type': data structure holding the parts,
-            'part_type': data structure describing the parts,
+            'part_type': data structure describing the parts (sets of nodes),
             'data_size': size of complete container}
 
             The wrapper runs a set of timed runs of the function and returns a dictionary
@@ -79,7 +84,7 @@ class SetPerformanceTester:
         @wraps(func)
         def wrapper(*args, **kwargs):
 
-            trials = 2
+            trials = 10
             total = 0
 
             for i in range(0, trials):
@@ -120,45 +125,45 @@ class SetPerformanceTester:
             print 'Problems loading data from file.'
             exit()
 
-    def load_random_data(self, parts, nodes):
+    def load_random_data(self, parts, nodes, max_nodes):
         """Generate and load random data based on the given nodes and parts."""
 
         self.parts = parts
         self.nodes = nodes
+        self.max_nodes = max_nodes
 
         if self.verbose:
             print 'Generating random data using nodes:' + str(nodes) + \
-                ' parts:' + str(parts)
+                ' parts:' + str(parts) + ' max nodes:' + str(max_nodes)
 
         node_list = []
         node_list.extend(range(1, nodes))
 
         # for each part we want to add a random number of nodes from the node list
         for i in range(1, parts):
-            self.data_dict[i] = random.sample(node_list, random.randint(2, len(node_list)))
+            self.data_dict[i] = random.sample(node_list, random.randint(2, max_nodes))
 
     def run_tests(self):
         """Run tests and populate the test report."""
 
         self.test_report = []
 
-        #dict of lists
-        self.test_report.append(self.dicts_any_intersection_node_test(self.data_dict))
+        #dict of unsorted lists
+        dict_of_un_lists = self.dict_un_lists_intersection_test(self.data_dict)
+        self.test_report.append(dict_of_un_lists)
 
         #dict of sets
         dict_of_sets = self.build_dict_of_sets(self.data_dict)
-        self.test_report.append(self.dicts_any_intersection_node_test(dict_of_sets))
-
-        #set of sets
-        set_of_sets = self.build_set_of_sets(self.data_dict)
-        self.test_report.append(self.sets_any_intersection_node_test(set_of_sets))
+        self.test_report.append(self.dict_sets_intersection_test(dict_of_sets))
 
         #pandas - experimental and probably not the way to use pandas
         # dict_of_pandas = self.build_dict_of_panda_series(self.data_dict)
         # self.test_report.append(self.dicts_any_intersection_node_test(dict_of_pandas))
 
         # print results
-        self.print_tests_results()
+
+        if self.verbose:
+            self.print_tests_results()
 
     def print_tests_results(self):
         """Print the test results, broken out for future enhancements."""
@@ -167,63 +172,64 @@ class SetPerformanceTester:
             for detail in test:
                 print detail + ': ', test[detail]
 
-    @timetest
-    def dicts_any_intersection_node_test(self, data):
-        """A simple way to find if parts share a common node using a dictionary of lists or sets.
-            An improvement would be to not double check the parts against each other."""
 
-        data_size = sys.getsizeof(data)
-        container_type = type(data)
-        part_type = None
+    def get_data_info(self,data):
+        """This functions extracts the information we want to know about the data structures tested"""
+        if data:
+            container_type = type(data)
+            #this would have to change if you were to use change data structures around
+            part_type = type(data[min(data)])
+
+            return {'container_type': container_type, 'part_type': part_type, 'data_size': sys.getsizeof(data)}
+
+        return {'container_type': None, 'part_type': None, 'data_size': 0}
+
+
+    @timetest
+    def dict_un_lists_intersection_test(self, data):
+        """A simple way to find if parts share a common node using a dictionary of unsorted lists.
+            An improvement would be to change the type of the finished variable."""
+
+        data_info = self.get_data_info(data)
+        finished = []
 
         for part in data:
-            if not part_type:
-                part_type = type(data[part])
             for union_part in data:
-                if part != union_part:
+                union = []
+                if part != union_part and union_part not in finished:
                     for node in data[part]:
                         if node in data[union_part]:
-                            break
-        return {'container_type': container_type, 'part_type': part_type, 'data_size': data_size}
+                            union.append(node)
+            finished.append(part)
+
+        return data_info
+
 
     @timetest
-    def sets_any_intersection_node_test(self, data):
-        """A simple way to find if parts share a common node using sets of sets. An improvement
-            would be to not double check the parts against each other."""
+    def dict_sets_intersection_test(self, data):
+        """A simple way to find if parts share a common node using a dictionary of sets.
+            An improvement would be to change the type of the finished variable."""
 
-        data_size = sys.getsizeof(data, 0)
-        container_type = type(data)
-        part_type = None
+        data_info = self.get_data_info(data)
+        finished = []
 
         for part in data:
-            if not part_type:
-                part_type = type(part)
             for union_part in data:
-                if part != union_part:
-                    for node in part:
-                        if node in union_part:
-                            break
-        return {'container_type': container_type, 'part_type': part_type, 'data_size': data_size}
+                if part != union_part and union_part not in finished:
+                    data[part].intersection(data[union_part])
+            finished.append(part)
+
+        return data_info
+
 
     @staticmethod
     def build_dict_of_sets(data):
-        """Build set of sets for tests"""
+        """Build dicts of sets for tests. Broken out for now for possible testing."""
 
         data_sets = {}
 
         for part in data:
             data_sets[part] = set(data[part])
-
-        return data_sets
-
-    @staticmethod
-    def build_set_of_sets(data):
-        """Build set of sets for tests"""
-
-        data_sets = set()
-
-        for part in data:
-            data_sets.add(frozenset(data[part]))
 
         return data_sets
 
@@ -240,27 +246,22 @@ class SetPerformanceTester:
     #     return data_pandas
 
     def create_intersection_report(self, data=None):
-        """Determine if two parts have intersecting nodes and save to intersection report - NOT OPTIMIZED"""
+        """Determine if two parts have intersecting nodes and save to intersection report and save it to the report.
+        The format of the report is [part, union_part, union_set]  """
 
         if not data:
             data = self.build_dict_of_sets(self.data_dict)
 
         self.intersection_report_data = []
+        finished = []
 
         for part in data:
-            report_row = []
-
             for union_part in data:
-                if part == union_part:
-                    report_row.append(True)
-                else:
-                    union_flag = False
-                    for node in data[part]:
-                        if node in data[union_part]:
-                            union_flag = True
-                            break
-                    report_row.append(union_flag)
-            self.intersection_report_data.append(report_row)
+                if part != union_part and union_part not in finished:
+                    union_set = data[part].intersection(data[union_part])
+                    self.intersection_report_data.append([part, union_part, union_set])
+            finished.append(part)
+
 
     def print_intersection_report(self):
         """Print out report to the output directory based on nodes and parts"""
@@ -276,15 +277,10 @@ class SetPerformanceTester:
                 print 'Printing Report data to ' + filename
 
             with open(filename, 'wt') as f:
-                for part_number, part in enumerate(self.intersection_report_data, start=1):
-                    f.write('Part Number:' + str(part_number) + '\n')
-                    f.write('-------------------------' + '\n')
-                    for union_part_number, union_test_bool in enumerate(self.intersection_report_data[part_number-1],
-                                                                        start=1):
-
-                        f.write('Union Set:' + str(part_number) + '\t Set: ' + str(union_part_number) + '\t flag:' +
-                                str(union_test_bool) + '\n')
-
+                for report_row in self.intersection_report_data:
+                    f.write(str(report_row[0]) + '|' + str(report_row[1]))
+                    f.write(report_row[2])
+                    f.write('\n')
         except Exception, e:
             print 'Unexpected error:', str(e)
             print 'Problems writing the data output file.'
@@ -298,6 +294,11 @@ parser.add_argument('-nodes',
                     type=int,
                     action='store',
                     help='number of nodes in the data set')
+parser.add_argument('-maxNodes',
+                    dest='max_nodes',
+                    type=int,
+                    action='store',
+                    help='max number of nodes in each part')
 parser.add_argument('-parts',
                     dest='parts',
                     type=int,
@@ -333,20 +334,23 @@ if args.file:
     set_perm_tester = SetPerformanceTester(verbose=args.verbose,
                                            filename=args.file)
 else:
-    if args.parts and args.nodes:
+    if args.parts and args.nodes and args.max_nodes:
         if args.verbose:
             print 'Starting with data using nodes:' + str(args.nodes) + \
-                ' parts:' + str(args.parts)
-        set_perm_tester = SetPerformanceTester(verbose=args.verbose, nodes=args.nodes, parts=args.parts)
+                ' parts:' + str(args.parts) + ' maxNodes:' + str(args.max_nodes)
+        set_perm_tester = SetPerformanceTester(verbose=args.verbose,
+                                               nodes=args.nodes,
+                                               parts=args.parts,
+                                               max_nodes=args.max_nodes)
     else:
         if args.nodes:
             if args.verbose:
                 print 'Notice: You did not include a number for parts.'
-            set_perm_tester = SetPerformanceTester(verbose=args.verbose, nodes=args.nodes)
+            set_perm_tester = SetPerformanceTester(verbose=args.verbose, nodes=args.nodes, max_nodes=args.max_nodes)
         elif args.parts:
             if args.verbose:
                 print 'Notice: you did not include a number for nodes.'
-            set_perm_tester = SetPerformanceTester(verbose=args.verbose, parts=args.parts)
+            set_perm_tester = SetPerformanceTester(verbose=args.verbose, parts=args.parts, max_nodes=args.max_nodes)
         else:
             if args.verbose:
                 print 'Notice: No information given using defaults.'
