@@ -24,9 +24,10 @@ class SetPerformanceTester:
 
         Keyword arguments:
         filename -- path to the file with the input information
-        parts -- the number of nodes to use (default 50)
-        nodes -- the imaginary part (default 1000)
+        parts -- the number of nodes to use (default 200)
+        nodes -- the imaginary part (default 3000)
         verbose -- write out debug information to system (default False)
+        max_nodes -- the max number of nodes in each part (default to nodes)
 
         NOTE: the pandas stuff is commented out so you can run on base python and because
         it is not well implemented.
