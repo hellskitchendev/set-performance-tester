@@ -6,8 +6,8 @@ The Vagrant file can be used with [Vagrant](http://www.vagrantup.com/) and [Virt
 
 Keyword arguments:
 * filename -- path to the file with the input information
-* parts -- the number of nodes to use (default 50)
-* nodes -- the imaginary part (default 1000)
+* parts -- the number of nodes to use (default 200)
+* nodes -- the imaginary part (default 3000)
 * maxNodes -- the max number of nodes in each part (default # of nodes)
 * verbose -- write out debug information to system (default False)
 * skipTests -- skip the tests and create part intersection report (default False)
