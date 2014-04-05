@@ -5,10 +5,10 @@ The class and script are in src/SetPerformanceTester.py
 The Vagrant file can be used with [Vagrant](http://www.vagrantup.com/) and [VirtualBox](https://www.virtualbox.org/) to set up an environment to run the code.
 
 Keyword arguments:
-* -filename -- path to the file with the input information
-* -parts -- the number of nodes to use (default 200)
-* -nodes -- the imaginary part (default 3000)
-* -maxNodes -- the max number of nodes in each part (default # of nodes)
+* -filename [path] -- path to the file with the input information
+* -parts [parts] -- the number of nodes to use (default 200)
+* -nodes [nodes] -- the imaginary part (default 3000)
+* -maxNodes [maxNodes] -- the max number of nodes in each part (default # of nodes)
 * -v -- write out debug information to system (default False)
 * -skipTests -- skip the tests and create part intersection report (default False)
 * -fileOut -- write out intersection report to a file (default False)
