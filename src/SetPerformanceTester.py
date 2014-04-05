@@ -177,8 +177,10 @@ class SetPerformanceTester:
         """This functions extracts the information we want to know about the data structures tested"""
         if data:
             container_type = type(data)
-            #this would have to change if you were to use change data structures around
-            part_type = type(data[min(data)])
+            part_type = None
+
+            if container_type is dict or  container_type is list:
+                part_type = type(data[min(data)])
 
             return {'container_type': container_type, 'part_type': part_type, 'data_size': sys.getsizeof(data)}
 
